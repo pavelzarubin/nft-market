@@ -16,7 +16,7 @@ extra-source-files:  CHANGELOG.md
 cabal-version:       >=1.10
 
 library
-  exposed-modules:    NFTSale,Trace
+  exposed-modules:    NFTSale,Trace, Minting
   --other-modules:      
   -- other-extensions:
   build-depends:       base >=4.14.1.0
