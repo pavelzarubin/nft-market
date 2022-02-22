@@ -336,8 +336,8 @@ testMintTrace = do
   h1 <- activateContractWallet (knownWallet 1) mintEndpoints
   callEndpoint @"mint" h1 $
     NFTParams
-      { npToken = tn,
-        npAddress = mockWalletAddress (knownWallet 1)
+      { npToken = tn
+      -- npAddress = mockWalletAddress (knownWallet 1)
       }
   void $ waitNSlots 1
   Extras.logInfo @String "end"
@@ -373,8 +373,8 @@ testMintAndSaleTrace = do
   h1 <- activateContractWallet (knownWallet 1) mintEndpoints
   callEndpoint @"mint" h1 $
     NFTParams
-      { npToken = tn,
-        npAddress = mockWalletAddress (knownWallet 1)
+      { npToken = tn
+      --   npAddress = mockWalletAddress (knownWallet 1)
       }
   void $ waitNSlots 1
   h1s <- activateContractWallet (knownWallet 1) saleEndpoints

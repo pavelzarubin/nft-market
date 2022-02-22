@@ -36,6 +36,7 @@ library
                       , plutus-use-cases
                       , prettyprinter
                       , lens
+                      , openapi3
   hs-source-dirs:      src
   default-language:    Haskell2010
   ghc-options:         -Wall -fobject-code -fno-ignore-interface-pragmas -fno-omit-interface-pragmas -fno-strictness -fno-spec-constr -fno-specialise
@@ -58,6 +59,7 @@ executable nft-marketplace
                       , lens
                       , freer-extras
                       , data-default
+                      , openapi3
   hs-source-dirs:      src
   default-language:    Haskell2010
 
@@ -88,3 +90,33 @@ test-suite nft-tests
                       , tasty-quickcheck
                       , tasty
                       , nft-market
+
+executable PAB
+  main-is:      Main.hs     
+  other-modules:       
+
+  -- other-extensions:
+  build-depends:        base >=4.14.1.0
+                      , aeson
+                      , bytestring
+                      , containers
+                      , plutus-contract
+                      , playground-common
+                      , text
+                      , plutus-tx
+                      , plutus-ledger
+                      , plutus-ledger-constraints
+                      , plutus-ledger-api
+                      , plutus-tx-plugin
+                      , freer-extras
+                      , data-default
+                      , plutus-use-cases
+                      , prettyprinter
+                      , lens
+                      , nft-market
+                      , plutus-pab
+                      , freer-simple
+                      , openapi3
+
+  hs-source-dirs:      PAB
+  default-language:    Haskell2010

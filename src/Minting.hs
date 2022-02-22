@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -15,6 +16,7 @@ module Minting where
 import Control.Monad hiding (fmap)
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Map as Map
+import qualified Data.OpenApi as OpenApi
 import Data.Text (Text)
 import Data.Void (Void)
 import GHC.Generics (Generic)
@@ -22,11 +24,12 @@ import Ledger hiding (mint, singleton)
 import Ledger.Constraints as Constraints
 import qualified Ledger.Typed.Scripts as Scripts
 import Ledger.Value as Value
+import Playground.Contract (ToSchema)
 import Plutus.Contract as Contract
 import qualified PlutusTx
 import PlutusTx.Prelude hiding (Semigroup (..), unless)
 import Text.Printf (printf)
-import Prelude (Semigroup (..), Show (..), String)
+import Prelude (Eq, Semigroup (..), Show (..), String)
 
 {-# INLINEABLE mkPolicy #-}
 mkPolicy :: TxOutRef -> TokenName -> () -> ScriptContext -> Bool
@@ -56,16 +59,17 @@ curSymbol :: TxOutRef -> TokenName -> CurrencySymbol
 curSymbol oref tn = scriptCurrencySymbol $ policy oref tn
 
 data NFTParams = NFTParams
-  { npToken :: !TokenName,
-    npAddress :: !Address
+  { npToken :: !TokenName
+  --npAddress :: !Address --КОССТЫЛЬ
   }
-  deriving (Generic, FromJSON, ToJSON, Show)
+  deriving (Generic, FromJSON, ToJSON, Show, OpenApi.ToSchema, Prelude.Eq, ToSchema)
 
 type MintSchema = Endpoint "mint" NFTParams
 
 mint :: NFTParams -> Contract w MintSchema Text ()
 mint np = do
-  utxos <- utxosAt $ npAddress np
+  pkh <- Contract.ownPaymentPubKeyHash -- КОСТЫЛЬ
+  utxos <- utxosAt $ pubKeyHashAddress pkh Nothing -- КОСТЫЛЬ
   case Map.keys utxos of
     [] -> Contract.logError @String "no utxo found"
     oref : _ -> do

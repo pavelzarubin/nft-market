@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Trace (runTrace) where
+module Trace where
 
 import Control.Lens
 import Control.Monad.Freer.Extras as Extras
@@ -13,6 +13,7 @@ import qualified Data.Map as Map
 import Ledger
 import Ledger.Ada
 import Ledger.Value
+import Minting
 import NFTSale (NFT (..), StartSaleParams (..), saleEndpoints)
 import Plutus.Contract.Test
 import Plutus.Trace
@@ -170,3 +171,17 @@ emuConf2Sales =
 
 run2Sales :: IO ()
 run2Sales = runEmulatorTraceIO' def emuConf2Sales twoSalesTrace
+
+testMintTrace :: EmulatorTrace ()
+testMintTrace = do
+  h1 <- activateContractWallet (knownWallet 1) mintEndpoints
+  callEndpoint @"mint" h1 $
+    NFTParams
+      { npToken = tn
+      --npAddress = mockWalletAddress (knownWallet 1)
+      }
+  void $ waitNSlots 1
+  Extras.logInfo @String "end"
+
+runTraceMint :: IO ()
+runTraceMint = runEmulatorTraceIO testMintTrace

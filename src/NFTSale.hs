@@ -13,11 +13,12 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module NFTSale (saleEndpoints, NFT (..), StartSaleParams (..)) where
+module NFTSale where
 
 import Control.Monad hiding (fmap)
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Map as Map
+import qualified Data.OpenApi as OpenApi
 import Data.Text (Text)
 import GHC.Generics (Generic)
 import Ledger hiding (singleton)
@@ -29,7 +30,7 @@ import Playground.Contract (ToSchema)
 import Plutus.Contract as Contract
 import qualified PlutusTx
 import PlutusTx.Prelude hiding (Semigroup (..), unless)
-import Prelude (Semigroup (..), Show (..), String)
+import Prelude (Eq, Semigroup (..), Show (..), String)
 
 --- Минимальное количество ADA для создания скрипта с продажей
 --- Minimum number of ADA to create a script with a sale
@@ -44,9 +45,9 @@ data NFT = NFT
   { nftTokenName :: !TokenName,
     nftCurrencySymbol :: !CurrencySymbol
   }
-  deriving (Show, Generic, FromJSON, ToJSON, ToSchema)
+  deriving (Show, Generic, FromJSON, ToJSON, ToSchema, OpenApi.ToSchema, Prelude.Eq)
 
-instance Eq NFT where
+instance PlutusTx.Prelude.Eq NFT where
   {-# INLINEABLE (==) #-}
   NFT t1 c1 == NFT t2 c2 = (t1 == t2) && (c1 == c2)
 
@@ -59,7 +60,7 @@ data NFTSale = NFTSale
     nsPrice :: !Integer,
     nsNFT :: !NFT
   }
-  deriving (Show, Generic, FromJSON, ToJSON)
+  deriving (Show, Generic, FromJSON, ToJSON, Prelude.Eq)
 
 PlutusTx.unstableMakeIsData ''NFTSale
 
@@ -117,7 +118,7 @@ data StartSaleParams = StartSaleParams
   { sspNFT :: NFT,
     sspPrice :: Integer
   }
-  deriving (Show, Generic, FromJSON, ToJSON, ToSchema)
+  deriving (Show, Generic, FromJSON, ToJSON, ToSchema, OpenApi.ToSchema, Prelude.Eq)
 
 -- Начало продажи. Вносится NFT и минимальное необходимое количество ADA для создания продажи.
 -- Start of Sale. The NFT and the minimum required amount of ADA to create the sale is entered.
