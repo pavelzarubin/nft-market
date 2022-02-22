@@ -16,8 +16,8 @@ extra-source-files:  CHANGELOG.md
 cabal-version:       >=1.10
 
 library
-  -- exposed-modules:
-  other-modules:      NFTSale,Trace
+  exposed-modules:    NFTSale,Trace
+  --other-modules:      
   -- other-extensions:
   build-depends:       base >=4.14.1.0
                       , aeson
@@ -40,7 +40,7 @@ library
   default-language:    Haskell2010
   ghc-options:         -Wall -fobject-code -fno-ignore-interface-pragmas -fno-omit-interface-pragmas -fno-strictness -fno-spec-constr -fno-specialise
 
-executable nft-market
+executable nft-marketplace
   main-is:             Main.hs
   other-modules:       NFTSale, Trace
   -- other-extensions:
@@ -60,3 +60,31 @@ executable nft-market
                       , data-default
   hs-source-dirs:      src
   default-language:    Haskell2010
+
+
+test-suite nft-tests
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  hs-source-dirs: test
+  other-modules:  Spec.Trace  
+  default-language: Haskell2010
+  ghc-options:         -Wall -fobject-code -fno-ignore-interface-pragmas -fno-omit-interface-pragmas
+  build-depends:       base >=4.14.1.0
+                      , aeson
+                      , containers
+                      , text
+                      , plutus-ledger
+                      , plutus-ledger-api
+                      , plutus-ledger-constraints
+                      , playground-common
+                      , plutus-contract
+                      , plutus-tx 
+                      , plutus-tx-plugin
+                      , lens
+                      , freer-extras
+                      , data-default
+                      , lens
+                      , QuickCheck
+                      , tasty-quickcheck
+                      , tasty
+                      , nft-market
