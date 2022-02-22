@@ -12,21 +12,32 @@ import Data.Functor (void)
 import qualified Data.Map as Map
 import Ledger.Ada
 import Ledger.Value
+import Minting
 import NFTSale
 import Plutus.Contract.Test
 import Plutus.Trace
 import Test.Tasty
+import Wallet.Emulator.Wallet
 
+-- Тестовое имя токена
+-- Test token name
 tn :: TokenName
 tn = "ABC"
 
+-- Тестовый "символ валюты"
+-- Test "currency symbol"
 cur :: CurrencySymbol
 cur = "aa"
 
+-- Тестовый NFT
+-- Test NFT
 nftToken :: AssetClass
 nftToken = AssetClass (cur, tn)
 
 ---------------------------------------------------------------
+-- Тестирование обычной продажи
+-- Testing of a normal sale
+
 testTraceBuy :: EmulatorTrace ()
 testTraceBuy = do
   h1 <- activateContractWallet (knownWallet 1) saleEndpoints
@@ -71,6 +82,8 @@ testBuy =
     testTraceBuy
 
 -------------------------------------------------------------------------------
+-- Тестирование закрытия продажи
+-- Closing the sale test
 
 testCloseTrace :: EmulatorTrace ()
 testCloseTrace = do
@@ -112,6 +125,9 @@ testClose =
     testCloseTrace
 
 -------------------------------------------------------------------------------------------------------
+-- Тестирование закрытия несуществующей продажи
+-- Testing the closing of a nonexistent sale
+
 testBadCloseTrace :: EmulatorTrace ()
 testBadCloseTrace = do
   h1 <- activateContractWallet (knownWallet 1) saleEndpoints
@@ -134,6 +150,9 @@ testBadClose =
     testBadCloseTrace
 
 -------------------------------------------------------------------------------------------------------
+-- Тестирования старта продажи
+-- Sale launch test
+
 testOnlyStartTrace :: EmulatorTrace ()
 testOnlyStartTrace = do
   h1 <- activateContractWallet (knownWallet 1) saleEndpoints
@@ -159,6 +178,8 @@ testOnlyStart =
     testOnlyStartTrace
 
 ------------------------------------------------------------------------------------------------------
+-- Тестирование перепродажи, одного и того же NFT
+-- Resale testing
 
 testResaleTrace :: EmulatorTrace ()
 testResaleTrace = do
@@ -217,12 +238,14 @@ testResale =
     (defaultCheckOptions & emulatorConfig .~ emuConf2Sales)
     "succesfull resale"
     ( walletFundsChange (knownWallet 1) ((lovelaceValueOf 2_000_000) <> (assetClassValue nftToken (-1)))
-        .&&. walletFundsChange (knownWallet 2) (lovelaceValueOf (1_000_000))
+        .&&. walletFundsChange (knownWallet 2) (lovelaceValueOf 1_000_000)
         .&&. walletFundsChange (knownWallet 3) ((lovelaceValueOf (-3_000_000)) <> (assetClassValue nftToken 1))
     )
     testResaleTrace
 
 -----------------------------------------------------------------------------------------------------------
+-- Тестирование продажи, после покупки
+-- Sales testing, after purchase
 
 testLateSaleTrace :: EmulatorTrace ()
 testLateSaleTrace = do
@@ -267,6 +290,8 @@ testLateSale =
     testLateSaleTrace
 
 --------------------------------------------------------------------------------------------------
+-- Тестирование закрытия продажи непродавцом
+-- Testing the closing of a sale by a non-seller
 
 testUnsignedCloseTrace :: EmulatorTrace ()
 testUnsignedCloseTrace = do
@@ -301,3 +326,92 @@ testUnsignedClose =
         .&&. (Plutus.Contract.Test.not assertNoFailedTransactions)
     )
     testUnsignedCloseTrace
+
+-------------------------------------------------------------
+-- Тестирование создания NFT
+-- Testing the creation of an NFT
+
+testMintTrace :: EmulatorTrace ()
+testMintTrace = do
+  h1 <- activateContractWallet (knownWallet 1) mintEndpoints
+  callEndpoint @"mint" h1 $
+    NFTParams
+      { npToken = tn,
+        npAddress = mockWalletAddress (knownWallet 1)
+      }
+  void $ waitNSlots 1
+  Extras.logInfo @String "end"
+
+runTraceMint :: IO ()
+runTraceMint = runEmulatorTraceIO testMintTrace
+
+testMint :: TestTree
+testMint =
+  checkPredicateOptions
+    (defaultCheckOptions & emulatorConfig .~ emuConfClose)
+    "test minting"
+    ( assertNoFailedTransactions
+        .&&. walletFundsChange (knownWallet 1) ((lovelaceValueOf 0) <> (assetClassValue mintedNFT 1))
+    )
+    testMintTrace
+
+mintedCur :: CurrencySymbol
+mintedCur = "606a304282b40f297f9190feff1fb614204646d8d16aee46124a396b"
+
+mintedTn :: TokenName
+mintedTn = "ABC"
+
+mintedNFT :: AssetClass
+mintedNFT = AssetClass (mintedCur, mintedTn)
+
+------------------------------------------------------------------------
+-- Тестирование создания и продажи NFT
+-- Testing the creation and sale of NFT
+
+testMintAndSaleTrace :: EmulatorTrace ()
+testMintAndSaleTrace = do
+  h1 <- activateContractWallet (knownWallet 1) mintEndpoints
+  callEndpoint @"mint" h1 $
+    NFTParams
+      { npToken = tn,
+        npAddress = mockWalletAddress (knownWallet 1)
+      }
+  void $ waitNSlots 1
+  h1s <- activateContractWallet (knownWallet 1) saleEndpoints
+  h2 <- activateContractWallet (knownWallet 2) saleEndpoints
+  callEndpoint @"start" h1s $
+    StartSaleParams
+      { sspPrice = 2_000_000,
+        sspNFT =
+          NFT
+            { nftTokenName = mintedTn1,
+              nftCurrencySymbol = mintedCur1
+            }
+      }
+  void $ waitNSlots 1
+  callEndpoint @"buy" h2 $
+    NFT
+      { nftTokenName = mintedTn1,
+        nftCurrencySymbol = mintedCur1
+      }
+  void $ waitNSlots 1
+  Extras.logInfo @String "end"
+
+testMintAndSale :: TestTree
+testMintAndSale =
+  checkPredicateOptions
+    (defaultCheckOptions & emulatorConfig .~ emuConfBuy)
+    "succesfull mint and sale"
+    ( walletFundsChange (knownWallet 1) (lovelaceValueOf 2_000_000)
+        .&&. walletFundsChange (knownWallet 2) ((lovelaceValueOf (-2_000_000)) <> (assetClassValue mintedNFT1 1))
+    )
+    testMintAndSaleTrace
+
+mintedCur1 :: CurrencySymbol
+mintedCur1 = "cd2663da92fa4b61a431137e9655713893664744dfa7a2df0a7032ca"
+
+mintedTn1 :: TokenName
+mintedTn1 = "ABC"
+
+mintedNFT1 :: AssetClass
+mintedNFT1 = AssetClass (mintedCur1, mintedTn1)

@@ -31,12 +31,15 @@ import qualified PlutusTx
 import PlutusTx.Prelude hiding (Semigroup (..), unless)
 import Prelude (Semigroup (..), Show (..), String)
 
+--- Минимальное количество ADA для создания скрипта с продажей
+--- Minimum number of ADA to create a script with a sale
 minLovelace :: Value
 minLovelace = lovelaceValueOf 2_000_000
 
 getLovelaceFromValueOf :: Value -> Integer
 getLovelaceFromValueOf = getLovelace . fromValue
 
+--  NFT
 data NFT = NFT
   { nftTokenName :: !TokenName,
     nftCurrencySymbol :: !CurrencySymbol
@@ -49,6 +52,8 @@ instance Eq NFT where
 
 PlutusTx.unstableMakeIsData ''NFT
 
+-- Параметры продажи. Цена, продавец, NFT.
+-- Sales Options. Price, seller, NFT.
 data NFTSale = NFTSale
   { nsSeller :: !PaymentPubKeyHash,
     nsPrice :: !Integer,
@@ -58,16 +63,19 @@ data NFTSale = NFTSale
 
 PlutusTx.unstableMakeIsData ''NFTSale
 
+-- Редимер c возможными вариантами сценария продажи
+-- Redeemer with possible variants of the sale scenario
+
 data NFTSaleRedeemer = Close | Buy deriving (Show, Generic, FromJSON, ToJSON)
 
 PlutusTx.unstableMakeIsData ''NFTSaleRedeemer
 
+-- Валидатор. Проверяет, что закрывает продажу продавец, и что выплачивается полная цена продажи.
+-- Validator. Verifies that the seller closes the sale and that the full sale price is paid.
 mkNFTSaleValidator :: NFTSale -> NFTSaleRedeemer -> ScriptContext -> Bool
-mkNFTSaleValidator NFTSale {..} red ctx =
-  True
-    && case red of
-      Close -> traceIfFalse "must be signed by seller" signedBySeller
-      Buy -> traceIfFalse "low price" checkPrice
+mkNFTSaleValidator NFTSale {..} red ctx = case red of
+  Close -> traceIfFalse "must be signed by seller" signedBySeller
+  Buy -> traceIfFalse "low price" checkPrice
   where
     info :: TxInfo
     info = scriptContextTxInfo ctx
@@ -102,6 +110,8 @@ saleAddress :: Address
 saleAddress = scriptAddress saleValidator
 
 -----------------------------------------------------------------------
+-- Параметры начала продажи. Цена, NFT.
+-- Start sale options. Price, NFT.
 
 data StartSaleParams = StartSaleParams
   { sspNFT :: NFT,
@@ -109,6 +119,8 @@ data StartSaleParams = StartSaleParams
   }
   deriving (Show, Generic, FromJSON, ToJSON, ToSchema)
 
+-- Начало продажи. Вносится NFT и минимальное необходимое количество ADA для создания продажи.
+-- Start of Sale. The NFT and the minimum required amount of ADA to create the sale is entered.
 startSale :: StartSaleParams -> Contract w NFTSaleSchema Text ()
 startSale (StartSaleParams nft price) = do
   pkh <- Contract.ownPaymentPubKeyHash
@@ -125,6 +137,9 @@ startSale (StartSaleParams nft price) = do
   logInfo @String $ "Sale of " ++ (show nft) ++ " started for price = " ++ (show price)
   return ()
 
+-- Функция для поиска нужной продажи.
+-- Function for finding the right sale.
+
 findNFTSale ::
   NFT ->
   Map.Map TxOutRef ChainIndexTxOut ->
@@ -139,6 +154,9 @@ findNFTSale nft@NFT {..} utxos = h g
         Nothing -> h xs
         (Just nftSale) -> if nft == (nsNFT nftSale) then Just (oref', nftSale) else Nothing
     h _ = Nothing
+
+-- Закрытие продажи. Продавец получает NFT и ADA обратно.
+-- Closing Sale. Seller receives NFT and ADA back.
 
 closeSale :: NFT -> Contract w NFTSaleSchema Text ()
 closeSale nft = do
@@ -156,6 +174,8 @@ closeSale nft = do
       logInfo @String "Sale closed"
     _ -> logError @String $ "Sale not founded. Datums: " ++ (show tst)
 
+-- Покупка NFT. Покупатель платит и получает NFT. Продавец получает оплату и "комиссию"
+-- Buying an NFT. The buyer pays and receives the NFT. Seller receives payment and "commission"
 buyNFT :: NFT -> Contract w NFTSaleSchema Text ()
 buyNFT nft = do
   utxos <- utxosAt saleAddress
@@ -175,6 +195,8 @@ buyNFT nft = do
       logInfo @String "NFT bought"
     _ -> logError @String $ "Sale not founded. Datums: " ++ (show tst)
 
+-- Схема
+-- Schema
 type NFTSaleSchema =
   Endpoint "start" StartSaleParams
     .\/ Endpoint "buy" NFT

@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Trace (runTrace, run2Sales) where
+module Trace (runTrace) where
 
 import Control.Lens
 import Control.Monad.Freer.Extras as Extras
@@ -16,6 +16,9 @@ import Ledger.Value
 import NFTSale (NFT (..), StartSaleParams (..), saleEndpoints)
 import Plutus.Contract.Test
 import Plutus.Trace
+
+-- Различные эмуляции ситуаций.
+-- Different emulations of situations.
 
 testTrace :: EmulatorTrace ()
 testTrace = do
@@ -74,15 +77,16 @@ nftToken = AssetClass (cur, tn)
 closeTrace :: EmulatorTrace ()
 closeTrace = do
   h1 <- activateContractWallet (knownWallet 1) saleEndpoints
-  callEndpoint @"start" h1 $
-    StartSaleParams
-      { sspPrice = 2_000_000,
-        sspNFT =
-          NFT
-            { nftTokenName = tn,
-              nftCurrencySymbol = cur
-            }
-      }
+  void $
+    callEndpoint @"start" h1 $
+      StartSaleParams
+        { sspPrice = 2_000_000,
+          sspNFT =
+            NFT
+              { nftTokenName = tn,
+                nftCurrencySymbol = cur
+              }
+        }
   void $ waitNSlots 1
   callEndpoint @"close" h1 $
     NFT

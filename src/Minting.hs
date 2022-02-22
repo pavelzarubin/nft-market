@@ -77,7 +77,7 @@ mint np = do
       void $ awaitTxConfirmed $ getCardanoTxId ledgerTx
       Contract.logInfo @String $ printf "minted NFT %s" (show val)
 
-endpoints :: Contract () MintSchema Text ()
-endpoints = mint' >> endpoints
+mintEndpoints :: Contract () MintSchema Text ()
+mintEndpoints = mint' >> mintEndpoints
   where
     mint' = awaitPromise $ endpoint @"mint" mint
