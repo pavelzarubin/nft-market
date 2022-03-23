@@ -17,7 +17,6 @@ import NFTSale
 import Plutus.Contract.Test
 import Plutus.Trace
 import Test.Tasty
-import Wallet.Emulator.Wallet
 
 -- Тестовое имя токена
 -- Test token name
@@ -27,7 +26,7 @@ tn = "ABC"
 -- Тестовый "символ валюты"
 -- Test "currency symbol"
 cur :: CurrencySymbol
-cur = "aa"
+cur = "8d803516132f6fb8ddfcf168065886bf44ecc9e0023b570963b4bac8"
 
 -- Тестовый NFT
 -- Test NFT
@@ -356,7 +355,7 @@ testMint =
     testMintTrace
 
 mintedCur :: CurrencySymbol
-mintedCur = "606a304282b40f297f9190feff1fb614204646d8d16aee46124a396b"
+mintedCur = "cc4d093455d89fb825cd2ee744884db9144d792b7a127636c4154909"
 
 mintedTn :: TokenName
 mintedTn = "ABC"
@@ -408,7 +407,7 @@ testMintAndSale =
     testMintAndSaleTrace
 
 mintedCur1 :: CurrencySymbol
-mintedCur1 = "cd2663da92fa4b61a431137e9655713893664744dfa7a2df0a7032ca"
+mintedCur1 = "8de6b34b982cea8f00f07922523d650555fb88b25e8dddef0892f65a"
 
 mintedTn1 :: TokenName
 mintedTn1 = "ABC"
