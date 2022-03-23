@@ -51,7 +51,7 @@ instance Builtin.HasDefinitions SaleContracts where
 
 handlers :: SimulatorEffectHandlers (Builtin SaleContracts)
 handlers =
-  Simulator.mkSimulatorHandlers def def $
+  Simulator.mkSimulatorHandlers def $
     interpret (contractHandler Builtin.handleBuiltin)
 
 tn :: TokenName
@@ -61,7 +61,7 @@ mintp :: NFTParams
 mintp = NFTParams tn
 
 cur :: CurrencySymbol
-cur = "fc2b07f4236535d4e6b693c5981e69f844c7dcaf505fcd92f3d7fee4"
+cur = "4cd1ca094263941e5f91dd8bad6a553a267b10afbecc337b7574f625"
 
 nft :: NFT
 nft =
@@ -88,15 +88,15 @@ main = void $
 
     void $ Simulator.activateContract wallet1 $ MintNFT mintp
 
-    Simulator.waitNSlots 1
+    Simulator.waitNSlots 3
 
     void $ Simulator.activateContract wallet1 $ StartSale ss
 
-    Simulator.waitNSlots 1
+    Simulator.waitNSlots 3
 
     void $ Simulator.activateContract wallet2 $ BuyNFT nft
 
-    Simulator.waitNSlots 1
+    Simulator.waitNSlots 3
 
     Simulator.logString @(Builtin SaleContracts) "Balances at the end of the simulation"
     b <- Simulator.currentBalances
